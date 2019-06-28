@@ -3,8 +3,8 @@
 import numpy as np
 import random
 
-from utils.gradcheck import gradcheck_naive
-from utils.utils import normalizeRows, softmax
+from a2.utils.gradcheck import gradcheck_naive
+from a2.utils.utils import normalizeRows, softmax
 
 
 def sigmoid(x):
@@ -17,7 +17,7 @@ def sigmoid(x):
     """
 
     ### YOUR CODE HERE
-
+    s = 1 / (1 + np.exp(-x))
     ### END YOUR CODE
 
     return s
@@ -56,8 +56,12 @@ def naiveSoftmaxLossAndGradient(
 
     ### Please use the provided softmax function (imported earlier in this file)
     ### This numerically stable implementation helps you avoid issues pertaining
-    ### to integer overflow. 
-
+    ### to integer overflow.
+    numerator = np.exp(np.dot(outsideVectors[outsideWordIdx].T, centerWordVec))
+    denominator = np.sum(np.exp(np.dot(outsideVectors.T, centerWordVec)))
+    loss = numerator / denominator
+    gradCenterVec = 1
+    gradOutsideVecs = 1
 
     ### END YOUR CODE
 

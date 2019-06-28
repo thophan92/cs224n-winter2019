@@ -2,14 +2,14 @@
 
 import random
 import numpy as np
-from utils.treebank import StanfordSentiment
+from a2.utils.treebank import StanfordSentiment
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 import time
 
-from word2vec import *
-from sgd import *
+from a2.word2vec import *
+from a2.sgd import *
 
 # Check Python Version
 import sys
