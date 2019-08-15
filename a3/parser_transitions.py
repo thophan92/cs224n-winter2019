@@ -60,6 +60,7 @@ class PartialParse(object):
         if transition == "RA" and len(self.stack) >= 2:
             self.dependencies.append((self.stack[-2], self.stack[-1]))
             del self.stack[-1]
+        print("done")
         ### END YOUR CODE
 
     def parse(self, transitions):
