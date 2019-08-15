@@ -60,7 +60,6 @@ class PartialParse(object):
         if transition == "RA" and len(self.stack) >= 2:
             self.dependencies.append((self.stack[-2], self.stack[-1]))
             del self.stack[-1]
-        print("done")
         ### END YOUR CODE
 
     def parse(self, transitions):
@@ -111,7 +110,19 @@ def minibatch_parse(sentences, model, batch_size):
     ###             to remove objects from the `unfinished_parses` list. This will free the underlying memory that
     ###             is being accessed by `partial_parses` and may cause your code to crash.
 
+    partial_parses      = [PartialParse(sen) for sen in sentences]
+    unfinished_parses   = partial_parses[:]
+    n_sen               = len(sentences)
 
+    while len(unfinished_parses) > 0:
+        minibatch = unfinished_parses[:batch_size]
+        transition = model.predict(minibatch)
+        for idx, parse in enumerate(minibatch):
+            parse.parse([transition[idx]])
+            if len(parse.buffer) == 0 and len(parse.stack) == 1:
+                unfinished_parses.remove(parse)
+
+    dependencies = [parse.dependencies for parse in partial_parses]
     ### END YOUR CODE
 
     return dependencies
