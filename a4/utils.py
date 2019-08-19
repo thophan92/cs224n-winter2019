@@ -29,8 +29,14 @@ def pad_sents(sents, pad_token):
     sents_padded = []
 
     ### YOUR CODE HERE (~6 Lines)
-
-
+    max_len = len(sents[0])
+    for sent in sents:
+        if len(sent) > max_len:
+            max_len = len(sent)
+    sents_padded = sents.copy()
+    for sent in sents_padded:
+        if len(sent) < max_len:
+            sent.extend([pad_token for _ in range(max_len - len(sent))])
     ### END YOUR CODE
 
     return sents_padded
@@ -76,3 +82,16 @@ def batch_iter(data, batch_size, shuffle=False):
 
         yield src_sents, tgt_sents
 
+
+def test_pad_sents():
+    sents = [
+        ["I", "love", "you"],
+        ["me"],
+        ["There", "is", "something", "wrong"]
+    ]
+    pad_token = "PAD"
+    for sent in pad_sents(sents,pad_token):
+        print(sent)
+
+if __name__ == '__main__':
+    test_pad_sents()
