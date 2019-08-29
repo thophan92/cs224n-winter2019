@@ -40,11 +40,7 @@ def pad_sents_char(sents, char_pad_token):
     ###
     ###     You should NOT use the method `pad_sents()` below because of the way it handles
     ###     padding and unknown words.
-    max_sentence_length = 0
-    for sent in sents:
-        if len(sent) > max_sentence_length:
-            max_sentence_length = len(sent)
-
+    max_sentence_length = max([len(sent) for sent in sents])
     pad_word = [[char_pad_token] * max_word_length]
     sents_padded = [[word + [char_pad_token] * (max_word_length - len(word)) for word in sent] +
                     pad_word * (max_sentence_length - len(sent)) for sent in sents]
