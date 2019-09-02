@@ -17,8 +17,8 @@ import torch.nn as nn
 #   `Highway` in the file `highway.py`
 # Uncomment the following two imports once you're ready to run part 1(j)
 
-# from cnn import CNN
-# from highway import Highway
+from cnn import CNN
+from highway import Highway
 
 # End "do not change" 
 
@@ -40,8 +40,18 @@ class ModelEmbeddings(nn.Module):
         ## End A4 code
 
         ### YOUR CODE HERE for part 1j
+        self.emb_char_size = 50
+        self.emb_word_size = embed_size
+        self.max_word_len = 21
+        pad_token_idx = vocab.char2id['<pad>']
+        # self.dropout_rate = 0.5
 
-
+        self.char_embeddings = nn.Embedding(num_embeddings=len(vocab.char2id), embedding_dim=self.emb_char_size,
+                                            padding_idx=pad_token_idx)
+        self.cnn = CNN(emb_char_size=self.emb_char_size, emb_word_size=self.emb_word_size,
+                       max_word_length=self.max_word_len)
+        self.highway = Highway(e_word_size=self.emb_word_size)
+        # self.dropout = nn.Dropout(self.dropout_rate)
         ### END YOUR CODE
 
     def forward(self, input):
@@ -59,7 +69,12 @@ class ModelEmbeddings(nn.Module):
         ## End A4 code
 
         ### YOUR CODE HERE for part 1j
-
-
+        embed = self.char_embeddings(input) # shape: (sentence_length, batch_size, max_word_length, emb_char_size)
+        (sentence_length, batch_size, max_word_length, _) = embed.shape
+        embed = embed.view((sentence_length * batch_size, max_word_length, -1)) # (sentence_length * batch_size, max_word_length, emb_char_size)
+        embed = embed.transpose(1, 2) # (b, emb_char_size, max_word_length)
+        x_conv_out = self.cnn(embed) # (b, emb_word_size)
+        x_highway = self.highway(x_conv_out) # (b, emb_word_size)
+        output = x_highway.view(sentence_length, batch_size, -1) # (sentence_length, batch_size, emb_word_size)
+        return output
         ### END YOUR CODE
-
