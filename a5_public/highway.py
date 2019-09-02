@@ -20,8 +20,8 @@ class Highway(nn.Module):
     def forward(self, x_conv_out):
         """
         Map from x_conv_out to x_highway with batches
-        @para x_conv_out: (b, e_word_size): b - batch size, e_word_size
-        @return x_highway: (b, e_word_size)
+        @para x_conv_out: shape (b, e_word_size): b - batch size, e_word_size
+        @return x_highway: shape (b, e_word_size)
         """
         x_proj = self.relu(self.w_proj(x_conv_out))
         x_gate = nn.Sigmoid(self.w_gate(x_conv_out))
