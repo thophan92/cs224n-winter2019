@@ -45,7 +45,7 @@ def pad_sents_char(sents, char_pad_token):
     sents_padded = [[word + [char_pad_token] * (max_word_length - len(word)) for word in sent] +
                     pad_word * (max_sentence_length - len(sent)) for sent in sents]
     ### END YOUR CODE
-    return sents_padded
+    return sents_padded # (batch_size, max_sentence_length, max_word_length)
 
 
 def pad_sents(sents, pad_token):
@@ -61,11 +61,17 @@ def pad_sents(sents, pad_token):
     sents_padded = []
 
     ### COPY OVER YOUR CODE FROM ASSIGNMENT 4
-
-
+    max_len = len(sents[0])
+    for sent in sents:
+        if len(sent) > max_len:
+            max_len = len(sent)
+    sents_padded = sents.copy()
+    for sent in sents_padded:
+        if len(sent) < max_len:
+            sent.extend([pad_token for _ in range(max_len - len(sent))])
     ### END YOUR CODE FROM ASSIGNMENT 4
 
-    return sents_padded
+    return sents_padded # list[list[int]]
 
 
 
