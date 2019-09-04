@@ -98,11 +98,8 @@ class NMT(nn.Module):
         ###     - Add `target_padded_chars` for character level padded encodings for target
         ###     - Modify calls to encode() and decode() to use the character level encodings
         target_padded = self.vocab.tgt.to_input_tensor(target, device=self.device)  # (max_sentence_length, batch_size)
-        source_padded_chars = self.vocab.src.to_input_tensor_char(source, device=self.device)  # (batch_size, max_sentence_length, max_word_length)
-        target_padded_chars = self.vocab.tgt.to_input_tensor_char(target, device=self.device)  # (batch_size, max_sentence_length, max_word_length)
-
-        source_padded_chars = torch.transpose(source_padded_chars, 0, 1)  # (max_sentence_length, batch_size, max_word_length)
-        target_padded_chars = torch.transpose(target_padded_chars, 0, 1)  # (max_sentence_length, batch_size, max_word_length)
+        source_padded_chars = self.vocab.src.to_input_tensor_char(source, device=self.device)  # (max_sentence_length, batch_size, max_word_length)
+        target_padded_chars = self.vocab.tgt.to_input_tensor_char(target, device=self.device)  # (max_sentence_length, batch_size, max_word_length)
 
         enc_hiddens, dec_init_state = self.encode(source_padded_chars, source_lengths)
         enc_masks = self.generate_sent_masks(enc_hiddens, source_lengths)
@@ -152,7 +149,7 @@ class NMT(nn.Module):
         ### COPY OVER YOUR CODE FROM ASSIGNMENT 4
         ### Except replace "self.model_embeddings.source" with "self.model_embeddings_source"
         X = self.model_embeddings_source(
-            source_padded)  # source_padded.shape : (src_len, b) --> X.shape : (src_len, b, emb_size)
+            source_padded)  # source_padded.shape : (src_len, b) --> X.shape : (sentence_length, batch_size, emb_word_size)
         X = pack_padded_sequence(X, lengths=source_lengths)
         enc_hiddens, (last_hidden, last_cell) = self.encoder(X)
         enc_hiddens, _ = pad_packed_sequence(enc_hiddens)
@@ -199,10 +196,17 @@ class NMT(nn.Module):
         ### Except replace "self.model_embeddings.target" with "self.model_embeddings_target"
         enc_hiddens_proj = self.att_projection(enc_hiddens)  # enc_hiddens_proj.shape : (b, src_len, h)
         Y = self.model_embeddings_target(target_padded)  # Y.shape : (tgt_len, b, e)
-        for Y_t in torch.split(Y, 1, dim=0):
-            Y_t = torch.squeeze(Y_t)
-            Ybar_t = torch.cat((Y_t, o_prev))
-            dec_state, o_t, e_t = self.step(Ybar_t, dec_state, enc_hiddens, enc_hiddens_proj, enc_masks)
+
+        # for Y_t in torch.split(Y, 1, dim=0):
+        #     Y_t = torch.squeeze(Y_t)
+        #     Ybar_t = torch.cat((Y_t, o_prev))
+        #     dec_state, o_t, e_t = self.step(Ybar_t, dec_state, enc_hiddens, enc_hiddens_proj, enc_masks)
+        #     combined_outputs.append(o_t)
+        #     o_prev = o_t
+        for Y_t in torch.split(Y, split_size_or_sections=1):
+            Y_t = Y_t.squeeze(0)
+            Ybar_t = torch.cat([Y_t, o_prev], dim=-1)
+            dec_state, o_t, _ = self.step(Ybar_t, dec_state, enc_hiddens, enc_hiddens_proj, enc_masks)
             combined_outputs.append(o_t)
             o_prev = o_t
         combined_outputs = torch.stack(combined_outputs)
@@ -253,12 +257,14 @@ class NMT(nn.Module):
             e_t.data.masked_fill_(enc_masks.byte(), -float('inf'))
 
         ### COPY OVER YOUR CODE FROM ASSIGNMENT 4
-        alpha_t = nn.functional.softmax(e_t)  # (b, src_len)
+        alpha_t = nn.functional.softmax(e_t, dim=-1)  # (b, src_len)
         # (b, 1, src_len) x (b, src_len, 2h) --> (b, 1, 2h) --> (b, 2h)
-        a_t = alpha_t.unsqueeze(1).bmm(enc_hiddens).squeeze(1)  # (b, 2h)
+        alpha_t_view = (alpha_t.size(0), 1, alpha_t.size(1))
+        a_t = torch.bmm(alpha_t.view(*alpha_t_view), enc_hiddens).squeeze(1)
+        # a_t = alpha_t.unsqueeze(1).bmm(enc_hiddens).squeeze(1)  # (b, 2h)
         U_t = torch.cat((a_t, dec_hidden), dim=1)  # (b, 3h)
         V_t = self.combined_output_projection(U_t)  # (b, h)
-        O_t = self.dropout(nn.functional.tanh(V_t))  # (b, h)
+        O_t = self.dropout(torch.tanh(V_t))  # (b, h)
 
         ### END YOUR CODE FROM ASSIGNMENT 4
         

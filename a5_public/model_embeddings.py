@@ -41,16 +41,16 @@ class ModelEmbeddings(nn.Module):
 
         ### YOUR CODE HERE for part 1j
         self.emb_char_size = 50
-        self.emb_word_size = embed_size
+        self.embed_size = embed_size
         self.max_word_len = 21
         pad_token_idx = vocab.char2id['<pad>']
         # self.dropout_rate = 0.5
 
         self.char_embeddings = nn.Embedding(num_embeddings=len(vocab.char2id), embedding_dim=self.emb_char_size,
                                             padding_idx=pad_token_idx)
-        self.cnn = CNN(emb_char_size=self.emb_char_size, emb_word_size=self.emb_word_size,
+        self.cnn = CNN(emb_char_size=self.emb_char_size, emb_word_size=self.embed_size,
                        max_word_length=self.max_word_len)
-        self.highway = Highway(e_word_size=self.emb_word_size)
+        self.highway = Highway(e_word_size=self.embed_size)
         # self.dropout = nn.Dropout(self.dropout_rate)
         ### END YOUR CODE
 

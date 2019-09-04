@@ -160,7 +160,7 @@ class VocabEntry(object):
         ###     previous parts
         sent_padded = pad_sents_char(self.words2charindices(sents), self['<pad>'])
 
-        return torch.transpose(torch.tensor(sent_padded), 0, 1).to(device) # (batch_size, max_sentence_length, max_word_length)
+        return torch.transpose(torch.tensor(sent_padded), 0, 1).to(device) # (max_sentence_length, batch_size, max_word_length)
         ### END YOUR CODE
 
     def to_input_tensor(self, sents: List[List[str]], device: torch.device) -> torch.Tensor:
