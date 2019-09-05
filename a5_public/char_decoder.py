@@ -27,7 +27,13 @@ class CharDecoder(nn.Module):
         ### Hint: - Use target_vocab.char2id to access the character vocabulary for the target language.
         ###       - Set the padding_idx argument of the embedding matrix.
         ###       - Create a new Embedding layer. Do not reuse embeddings created in Part 1 of this assignment.
-        
+        super(CharDecoder, self).__init__()
+
+        self.charDecoder = nn.LSTM(char_embedding_size, hidden_size)
+        self.v_char = len(target_vocab.char2id)
+        self.char_output_projection = nn.Linear(hidden_size, self.v_char, bias=True)
+        self.decoderCharEmb = nn.Embedding(self.v_char, char_embedding_size)
+        self.target_vocab = target_vocab
 
         ### END YOUR CODE
 
@@ -44,8 +50,10 @@ class CharDecoder(nn.Module):
         """
         ### YOUR CODE HERE for part 2b
         ### TODO - Implement the forward pass of the character decoder.
-        
-        
+        embeds = self.decoderCharEmb(input)  # (length, batch, char_embedding_size)
+        output, dec_hidden = self.charDecoder(embeds, dec_hidden)  # (length, batch, hidden_size)
+        scores = self.char_output_projection(output)  # (length, batch, self.vocab_size)
+        return scores, dec_hidden
         ### END YOUR CODE 
 
 
