@@ -72,7 +72,7 @@ class CharDecoder(nn.Module):
         ###       - char_sequence corresponds to the sequence x_1 ... x_{n+1} from the handout (e.g., <START>,m,u,s,i,c,<END>).
         scores_target = char_sequence[1:].contiguous().view(-1)  # (length - 1, batch) --> (length -1) * batch
         scores_output, _ = self.forward(char_sequence[:-1], dec_hidden)  # (length - 1, batch, vocab_size)
-        pt = nn.functional.softmax(scores_output, dim=2)  # # (length - 1, batch, vocab_size)
+        pt = nn.functional.softmax(scores_output, dim=2)  # (length - 1, batch, vocab_size)
         pt = pt.view(-1, pt.shape[2])
         pad_index = self.target_vocab.char2id['<pad>']
         loss_func = nn.CrossEntropyLoss(reduction="sum", ignore_index=pad_index)
@@ -97,7 +97,28 @@ class CharDecoder(nn.Module):
         ###      - Use torch.tensor(..., device=device) to turn a list of character indices into a tensor.
         ###      - We use curly brackets as start-of-word and end-of-word characters. That is, use the character '{' for <START> and '}' for <END>.
         ###        Their indices are self.target_vocab.start_of_word and self.target_vocab.end_of_word, respectively.
-        
-        
+        outputs = []
+        batch_size = initialStates[0].shape[1]
+        current_char = torch.tensor([self.target_vocab.start_of_word for _ in range(batch_size)],
+                                    device=device).unsqueeze(0)  # (1, batch)
+        dec_hidden = initialStates  # (1, batch, hidden_size)
+        for _ in range(max_length):
+            scores, dec_hidden = self.forward(current_char, dec_hidden) # scores.shape (1, batch, vocab_size)
+            scores = nn.functional.softmax(scores, dim=2)  # (1, batch, vocab_size)
+            current_char = scores.argmax(dim=2)  # (1, batch)
+            outputs.append(current_char.squeeze(0)) # list of [batch]
+
+        end_char_idx = self.target_vocab.end_of_word
+        words = []
+        outputs = torch.stack(outputs).transpose(0, 1)  # (batch, max_length)
+        for b in range(batch_size):
+            word = ""
+            for char in outputs[b]:
+                char_idx = char.item()
+                if char_idx == end_char_idx:
+                    break
+                word += self.target_vocab.id2char[char_idx]
+            words.append(word)
+        return words
         ### END YOUR CODE
 
