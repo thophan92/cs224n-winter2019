@@ -30,9 +30,9 @@ class CharDecoder(nn.Module):
         super(CharDecoder, self).__init__()
 
         self.charDecoder = nn.LSTM(char_embedding_size, hidden_size)
-        self.v_char = len(target_vocab.char2id)
-        self.char_output_projection = nn.Linear(hidden_size, self.v_char, bias=True)
-        self.decoderCharEmb = nn.Embedding(self.v_char, char_embedding_size)
+        self.vocab_size = len(target_vocab.char2id)
+        self.char_output_projection = nn.Linear(hidden_size, self.vocab_size, bias=True)
+        self.decoderCharEmb = nn.Embedding(self.vocab_size, char_embedding_size)
         self.target_vocab = target_vocab
 
         ### END YOUR CODE
@@ -70,8 +70,14 @@ class CharDecoder(nn.Module):
         ###
         ### Hint: - Make sure padding characters do not contribute to the cross-entropy loss.
         ###       - char_sequence corresponds to the sequence x_1 ... x_{n+1} from the handout (e.g., <START>,m,u,s,i,c,<END>).
-
-
+        scores_target = char_sequence[1:].contiguous().view(-1)  # (length - 1, batch) --> (length -1) * batch
+        scores_output, _ = self.forward(char_sequence[:-1], dec_hidden)  # (length - 1, batch, vocab_size)
+        pt = nn.functional.softmax(scores_output, dim=2)  # # (length - 1, batch, vocab_size)
+        pt = pt.view(-1, pt.shape[2])
+        pad_index = self.target_vocab.char2id['<pad>']
+        loss_func = nn.CrossEntropyLoss(reduction="sum", ignore_index=pad_index)
+        loss = loss_func(pt, scores_target)
+        return loss
         ### END YOUR CODE
 
     def decode_greedy(self, initialStates, device, max_length=21):
